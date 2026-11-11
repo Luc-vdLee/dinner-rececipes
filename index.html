@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<title>Walmart Dinner Recipes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column; pick a meal or tick components, then switch between the merged Walmart list and the cooking plan */
+:root {
+  --bg: #f6f8fb;
+  --card: #ffffff;
+  --fg: #16202e;
+  --muted: #5d6b7e;
+  --line: #dde3ec;
+  --accent: #1f5fd1;
+  --accent-soft: #e4ecfb;
+  --done: #2f7d4f;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141c; --card: #171e29; --fg: #e8edf4; --muted: #9aa6b8; --line: #2a3443;
+    --accent: #7aa7ff; --accent-soft: #1d2a42; --done: #6cc792; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141c; --card: #171e29; --fg: #e8edf4; --muted: #9aa6b8; --line: #2a3443;
+  --accent: #7aa7ff; --accent-soft: #1d2a42; --done: #6cc792; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 14px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: 1.75rem; line-height: 1.1; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; font-size: 0.95rem; }
+.titles { display: flex; flex-direction: column; gap: 6px; }
+
+.picker { display: flex; flex-direction: column; gap: 6px; }
+.picker-label { font-family: var(--display); font-weight: 600; font-size: 0.75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0; }
+.select-wrap { position: relative; }
+.select-wrap::after {
+  content: ""; position: absolute; right: 18px; top: 50%; width: 9px; height: 9px; margin-top: -7px;
+  border: solid var(--accent); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none;
+}
+select {
+  width: 100%; font: inherit; font-weight: 600; font-size: 1.02rem; color: var(--fg); background: var(--card);
+  border: 1px solid var(--line); border-radius: 12px; padding: 13px 44px 13px 14px; appearance: none; -webkit-appearance: none; cursor: pointer;
+}
+select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+fieldset.parts { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.chip {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; min-height: 56px; cursor: pointer;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+}
+.chip.on { border-color: var(--accent); background: var(--accent-soft); }
+.chip input { margin-top: 2px; }
+.chip-text { display: flex; flex-direction: column; min-width: 0; }
+.chip-name { font-weight: 600; line-height: 1.25; }
+.chip-meta { color: var(--muted); font-size: 0.8rem; }
+
+.progress { display: flex; align-items: center; gap: 12px; }
+.bar { flex: 1; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar span { display: block; height: 100%; width: 0; background: var(--done); transition: width .25s; }
+.count { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 0.9rem; min-width: 4.5em; text-align: right; }
+section { display: flex; flex-direction: column; gap: 8px; }
+h2 {
+  font-family: var(--display); font-weight: 600; font-size: 0.8rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent); margin: 0; display: flex; align-items: baseline; gap: 8px;
+}
+h2 .step { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+ul { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+ul > li + li { border-top: 1px solid var(--line); }
+ul label { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; min-height: 56px; }
+input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--done); flex: none; margin: 0; }
+input[type="checkbox"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.item { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.name { font-weight: 600; }
+.detail { color: var(--muted); font-size: 0.87rem; }
+.use { color: var(--accent); font-size: 0.84rem; font-weight: 500; }
+.price { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; flex: none; }
+.opt { font-size: 0.72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 0 7px; margin-left: 6px; vertical-align: 2px; }
+li.checked .name, li.checked .detail, li.checked .use, li.checked .price { text-decoration: line-through; opacity: .5; }
+.foot { display: flex; flex-direction: column; gap: 10px; color: var(--muted); font-size: 0.87rem; }
+.foot p { margin: 0; }
+button {
+  font: inherit; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 14px; cursor: pointer; align-self: flex-start;
+}
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.panel, .list { display: flex; flex-direction: column; gap: 18px; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--line); border-radius: 12px; }
+.tabs button { align-self: stretch; border: 0; border-radius: 9px; padding: 10px 8px; color: var(--muted); background: transparent; }
+.tabs button[aria-selected="true"] { background: var(--card); color: var(--fg); }
+
+.plan { background: var(--card); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.plan ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+.plan .when-text { color: var(--muted); }
+.comp-head { display: flex; flex-direction: column; gap: 2px; }
+.comp-head h2 { font-size: 1.15rem; letter-spacing: 0; text-transform: none; font-weight: 800; color: var(--fg); }
+.comp-head .meta { color: var(--muted); font-size: 0.87rem; }
+.note { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; font-size: 0.9rem; margin: 0; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.step-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; gap: 12px; }
+.num { font-family: var(--display); font-weight: 800; font-size: 1.3rem; line-height: 1.2; color: var(--accent); min-width: 1.4em; font-variant-numeric: tabular-nums; }
+.step-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.step-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; font-weight: 600; font-size: 1.05rem; line-height: 1.3; cursor: pointer; }
+.step-body p { margin: 0; }
+.amt { font-weight: 600; }
+.tip { color: var(--muted); font-size: 0.87rem; }
+.when { align-self: flex-start; font-size: 0.72rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 2px 8px; }
+.timer { font-variant-numeric: tabular-nums; }
+.timer.running { background: var(--accent-soft); border-color: transparent; }
+.timer.finished { background: var(--done); color: var(--card); border-color: transparent; }
+.step-card.checked .step-title span { text-decoration: line-through; opacity: .5; }
+.step-card.checked .step-body > :not(.step-title) { opacity: .5; }
+.empty { background: var(--card); border: 1px dashed var(--line); border-radius: 12px; padding: 18px 16px; color: var(--muted); margin: 0; }
+.view { display: flex; flex-direction: column; gap: 18px; }
+.topnav { display: flex; gap: 24px; border-bottom: 1px solid var(--line); }
+.topnav button {
+  border: 0; border-radius: 0; padding: 10px 2px 12px; margin-bottom: -1px; align-self: stretch;
+  font-family: var(--display); font-weight: 800; font-size: 1.05rem; color: var(--muted);
+  border-bottom: 3px solid transparent; display: flex; align-items: center; gap: 8px;
+}
+.topnav button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.badge { font-family: var(--body); font-size: 0.75rem; font-weight: 600; background: var(--accent); color: var(--card); border-radius: 99px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.add-form { display: flex; flex-direction: column; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.add-row { display: flex; flex-wrap: wrap; gap: 8px; }
+input[type="text"] {
+  font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px; min-width: 0; flex: 1 1 180px;
+}
+#g-qty { flex: 1 1 120px; }
+input[type="text"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.grow { flex: 1 1 180px; }
+.add-form select { background: var(--bg); }
+button.primary { background: var(--accent); color: var(--card); border-color: transparent; align-self: stretch; padding: 10px 22px; }
+button:disabled { opacity: .5; cursor: default; }
+.g-item { display: flex; align-items: center; }
+.g-item label { flex: 1; min-width: 0; }
+.g-item .name, .g-item .detail { overflow-wrap: anywhere; }
+.del { border: 0; color: var(--muted); font-size: 1.4rem; line-height: 1; padding: 10px 16px 10px 8px; align-self: center; }
+.g-status, .add-status { margin: 0; color: var(--muted); font-size: 0.87rem; }
+.add-status:empty { display: none; }
+.auth { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--muted); font-size: 0.9rem; }
+.store-bar { display: flex; align-items: center; gap: 12px; }
+.store-bar .select-wrap { flex: 0 1 220px; min-width: 0; }
+select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
+.meal-add { display: flex; flex-direction: column; gap: 6px; }
+.meal-add button.primary { padding: 12px 16px; }
+@media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
+</style>
+
+<div class="wrap">
+  <nav class="topnav" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" id="top-meals" aria-controls="meals-view" aria-selected="true">Meals</button>
+    <button type="button" role="tab" id="top-groceries" aria-controls="groceries-view" aria-selected="false">Grocery list <span class="badge" id="g-badge" hidden></span></button>
+  </nav>
+
+  <div class="store-bar">
+    <label class="picker-label" for="store">Store</label>
+    <span class="select-wrap"><select id="store" class="compact"></select></span>
+  </div>
+
+  <div class="view" id="meals-view" role="tabpanel" aria-labelledby="top-meals">
+  <header>
+    <label class="picker" for="meal">
+      <span class="picker-label">Meal</span>
+      <span class="select-wrap"><select id="meal"></select></span>
+    </label>
+    <fieldset class="parts">
+      <legend class="picker-label">Components</legend>
+      <div class="chips" id="chips"></div>
+    </fieldset>
+    <div class="meal-add">
+      <button type="button" id="meal-to-g" class="primary" disabled>Add this meal to my grocery list</button>
+      <p class="add-status" id="meal-add-status" aria-live="polite"></p>
+    </div>
+    <div class="titles">
+      <h1 id="meal-title">Sausage pasta</h1>
+      <p class="sub" id="meal-sub">Serves 4.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Recipe sections">
+      <button type="button" role="tab" id="tab-shop" aria-controls="shop" aria-selected="true">Shopping list</button>
+      <button type="button" role="tab" id="tab-cook" aria-controls="cook" aria-selected="false">Cooking steps</button>
+    </div>
+  </header>
+
+  <div class="panel" id="shop" role="tabpanel" aria-labelledby="tab-shop">
+    <p class="sub" id="shop-sub">One combined list for everything you picked, sorted by a typical Walmart layout. Tap an item to check it off.</p>
+    <div class="progress"><div class="bar"><span></span></div><div class="count">0 of 0</div></div>
+    <div class="list" id="shop-list"></div>
+    <div class="foot">
+      <p>Layouts differ from store to store. Check the aisle signs or the store's app if something isn't where the list expects.</p>
+      <button type="button" class="reset">Uncheck everything</button>
+    </div>
+  </div>
+
+  <div class="panel" id="cook" role="tabpanel" aria-labelledby="tab-cook" hidden>
+    <p class="sub">Read it through once, then check off each step as you go. Timers beep when they finish if your sound is on.</p>
+    <div class="progress"><div class="bar"><span></span></div><div class="count">0 of 0</div></div>
+    <div class="list" id="cook-list"></div>
+    <div class="foot">
+      <p>Leftovers keep 3 to 4 days in the fridge.</p>
+      <button type="button" class="reset">Uncheck all steps</button>
+    </div>
+  </div>
+  </div>
+
+  <div class="view" id="groceries-view" role="tabpanel" aria-labelledby="top-groceries" hidden>
+    <div class="titles">
+      <h1>Grocery list</h1>
+      <p class="sub" id="g-sub">Anything you need from Walmart, sorted by its typical layout.</p>
+    </div>
+    <form class="add-form" id="g-form" autocomplete="off">
+      <label class="picker-label" for="g-name">Add an item</label>
+      <div class="add-row">
+        <input type="text" id="g-name" placeholder="e.g. bananas" maxlength="80" enterkeyhint="done">
+        <input type="text" id="g-qty" placeholder="Amount (optional)" maxlength="40" aria-label="Amount">
+      </div>
+      <div class="add-row">
+        <span class="select-wrap grow"><select id="g-section" aria-label="Store section"></select></span>
+        <button type="submit" class="primary" id="g-add" disabled>Add</button>
+      </div>
+    </form>
+    <p class="g-status" id="g-status" aria-live="polite">Loading your list…</p>
+    <div class="auth" id="g-auth" hidden>
+      <span id="g-auth-text"></span>
+      <button type="button" id="g-signin">Sign in with Google</button>
+      <button type="button" id="g-signout" hidden>Sign out</button>
+    </div>
+    <div class="progress" id="g-progress"><div class="bar"><span></span></div><div class="count">0 of 0</div></div>
+    <div class="list" id="g-list"></div>
+    <div class="foot">
+      <button type="button" id="g-clear">Remove checked items</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ---------- Store sections, and each store's typical walking order ---------- */
+  var G_SECTIONS = [
+    { id: "produce", label: "Produce" }, { id: "bakery", label: "Bakery" }, { id: "meat", label: "Meat & seafood" },
+    { id: "pantry", label: "Pantry" }, { id: "spices", label: "Baking & spices" }, { id: "snacks", label: "Snacks & drinks" },
+    { id: "frozen", label: "Frozen" }, { id: "dairy", label: "Dairy & eggs" }, { id: "household", label: "Household & kitchen" },
+    { id: "personal", label: "Personal care" }, { id: "other", label: "Other" }
+  ];
+  var G_BY_ID = {};
+  G_SECTIONS.forEach(function (s) { G_BY_ID[s.id] = s; });
+  var STORES = [
+    { id: "walmart", name: "Walmart", order: ["produce", "bakery", "meat", "pantry", "spices", "snacks", "frozen", "dairy", "household", "personal", "other"] },
+    { id: "publix", name: "Publix", order: ["produce", "bakery", "meat", "pantry", "spices", "snacks", "household", "personal", "frozen", "dairy", "other"] },
+    { id: "target", name: "Target", order: ["personal", "household", "produce", "bakery", "meat", "pantry", "spices", "snacks", "frozen", "dairy", "other"] },
+    { id: "aldi", name: "Aldi", order: ["produce", "bakery", "pantry", "spices", "snacks", "household", "personal", "dairy", "meat", "frozen", "other"] }
+  ];
+  var storeId = "walmart";
+  function currentStore() {
+    for (var i = 0; i < STORES.length; i++) if (STORES[i].id === storeId) return STORES[i];
+    return STORES[0];
+  }
+  function storeSections() { return currentStore().order.map(function (id) { return G_BY_ID[id]; }); }
+
+  /* ---------- Ingredient catalog: what to look for on the shelf ----------
+     walmart: brand and price details checked at Walmart, shown only when Walmart is the store */
+  var ITEMS = {
+    "shallot":     { section: "produce", name: "1 shallot", buy: "or a small yellow onion" },
+    "garlic":      { section: "produce", name: "Garlic", buy: "1 head" },
+    "potatoes":    { section: "produce", name: "Yukon Gold potatoes", buy: "a 3 lb bag is usually the smallest" },
+    "parsley":     { section: "produce", name: "Fresh parsley" },
+    "sausage":     { section: "meat", name: "Italian sausage, mild or hot", buy: "about 1 lb, 4 to 5 links", walmart: { buy: "Marketside, 5 links, 19 oz", price: "$2.97" } },
+    "chicken":     { section: "meat", name: "Boneless, skinless chicken breasts", buy: "4 medium breasts, about 2 lb" },
+    "bacon":       { section: "meat", name: "Bacon, regular cut", buy: "one 12 oz pack; not thick-cut" },
+    "pasta-box":   { section: "pantry", name: "Pasta, 1 lb box", buy: "penne or rigatoni", walmart: { buy: "Great Value penne or rigatoni", price: "~$1.24" } },
+    "olive-oil":   { section: "pantry", name: "Olive oil", buy: "skip if you have some" },
+    "spray":       { section: "spices", name: "Nonstick cooking spray", buy: "skip if you have it; a little oil works too" },
+    "brown-sugar": { section: "spices", name: "Brown sugar" },
+    "paprika":     { section: "spices", name: "Smoked paprika", buy: "regular paprika works, just less smoky" },
+    "powders":     { section: "spices", name: "Garlic powder and onion powder" },
+    "cayenne":     { section: "spices", name: "Cayenne pepper" },
+    "chili":       { section: "spices", name: "Chili flakes" },
+    "salt-pepper": { section: "spices", name: "Salt and black pepper", buy: "skip if you have them" },
+    "wine":        { section: "snacks", name: "Dry white wine", buy: "a small bottle works" },
+    "butter":      { section: "dairy", name: "Butter" },
+    "milk":        { section: "dairy", name: "Milk", buy: "whole milk is creamiest" },
+    "sour-cream":  { section: "dairy", name: "Sour cream" },
+    "parmesan":    { section: "dairy", name: "Parmesan, finely shredded", buy: "a 5 to 6 oz bag or tub", walmart: { buy: "Great Value, 6 oz bag", price: "$2.08" } },
+    "cream":       { section: "dairy", name: "Heavy whipping cream", buy: "a pint is plenty", walmart: { buy: "Great Value, 32 oz", price: "~$4.83" } },
+    "foil":        { section: "household", name: "Aluminum foil", buy: "skip if you have it" },
+    "thermometer": { section: "household", name: "Instant-read meat thermometer", buy: "the easiest way to know meat is done" }
+  };
+
+  /* ---------- Components: each one works alone or combined ----------
+     uses: [catalog key, amount for this component, optional?]
+     with: notes and timing that apply only when another component is also picked */
+  var COMPONENTS = [
+    {
+      id: "chicken", name: "Bacon-wrapped chicken", short: "Chicken", kind: "Main", minutes: 40,
+      uses: [["chicken", "4 breasts"], ["bacon", "8 to 12 slices"], ["brown-sugar", "4 tbsp"], ["paprika", "2 tsp"],
+             ["powders", "½ tsp each"], ["cayenne", "¼ tsp", true], ["salt-pepper", "½ tsp each"], ["olive-oil", "1 tbsp"],
+             ["spray", "for the dish"], ["foil", "1 sheet"], ["thermometer", "", true], ["parsley", "to sprinkle on top", true]],
+      steps: [
+        { title: "Heat the oven", p: ["Heat the oven to <span class=\"amt\">400°F</span>."] },
+        { title: "Season the chicken",
+          p: ["Pat <span class=\"amt\">4 chicken breasts</span> dry with paper towels. If some are much thicker than others, pound the thick end with a heavy pan until they're all about even. Brush them with <span class=\"amt\">1 tablespoon of olive oil</span>.",
+              "In a shallow bowl, mix <span class=\"amt\">4 tbsp brown sugar</span>, <span class=\"amt\">2 tsp smoked paprika</span>, <span class=\"amt\">½ tsp garlic powder</span>, <span class=\"amt\">½ tsp onion powder</span>, <span class=\"amt\">¼ tsp cayenne</span>, <span class=\"amt\">½ tsp salt</span> and <span class=\"amt\">½ tsp black pepper</span>. Press the mix onto every side of each breast."],
+          tip: "Wash your hands and anything that touched the raw chicken before moving on." },
+        { title: "Wrap in bacon",
+          p: ["Spray a baking dish or oven-safe skillet with nonstick spray. Wrap each breast in <span class=\"amt\">2 to 3 slices of bacon</span>, overlapping them slightly, and set them in the dish with the bacon ends underneath. Sprinkle any leftover spice mix on top."],
+          tip: "If the bacon won't stay put, pin the ends with a toothpick. Take the toothpicks out before serving." },
+        { title: "Bake covered", p: ["Cover the dish with <span class=\"amt\">foil</span> and bake for <span class=\"amt\">15 minutes</span>."], timer: [900, "bake timer"] },
+        { title: "Uncover, baste and finish baking",
+          p: ["Take off the foil and spoon the pan juices over the chicken. Bake another <span class=\"amt\">5 to 15 minutes</span>, basting every 5 minutes, until a thermometer in the thickest part reads <span class=\"amt\">165°F</span>.",
+              "For crispier bacon, switch to broil for the last 2 minutes and watch it closely, because the sugar burns fast."],
+          tip: "No thermometer? Cut into the thickest breast. The meat should be white all the way through with clear juices.",
+          timer: [600, "bake timer"] },
+        { title: "Rest and serve",
+          p: ["Cover the chicken loosely with foil and let it rest <span class=\"amt\">5 minutes</span> so the juices settle. Remove any toothpicks and sprinkle with chopped parsley if you have it."],
+          timer: [300, "rest timer"] }
+      ]
+    },
+    {
+      id: "sausage", name: "Crispy Italian sausage", short: "Sausage", kind: "Main", minutes: 10,
+      uses: [["sausage", "about 1 lb"], ["olive-oil", "1 tbsp, only if the pan is dry", true]],
+      steps: [
+        { title: "Take off the casings", p: ["Slit the casings of <span class=\"amt\">about 1 lb of sausage</span> with a knife and squeeze the meat out."] },
+        { title: "Crisp the sausage",
+          p: ["Heat a large skillet over medium-high. Add the sausage meat and break it into small pieces with a wooden spoon, then leave it alone for a few minutes so it browns. Stir once and let it brown again, about 7 minutes total, until it's deep brown with no pink left."],
+          tip: "If the pan looks dry at the start, add <span class=\"amt\">1 tablespoon of olive oil</span>.",
+          timer: [420, "sausage timer"] },
+        { title: "Set it aside",
+          p: ["Scoop the sausage onto a plate. Serve it as is, crumble it over mashed potatoes, or toss it into pasta."],
+          tip: "If you aren't cooking anything else in the pan, let the fat cool and throw it in the trash, not down the sink." }
+      ]
+    },
+    {
+      id: "pasta", name: "Garlic Parmesan pasta", short: "Pasta", kind: "Side or base", minutes: 25,
+      uses: [["shallot", ""], ["garlic", "3 cloves"], ["pasta-box", "about 14 oz"], ["olive-oil", "2 tbsp (or butter)"],
+             ["salt-pepper", "to taste"], ["chili", "a pinch"], ["parmesan", "½ cup"], ["cream", "½ cup, for a creamy sauce", true],
+             ["wine", "¼ cup", true]],
+      with: {
+        sausage: {
+          note: "Making the crispy sausage too? Cook it first, in the skillet you'll use for the sauce. Use its fat instead of the olive oil in step 4, and toss the sausage back in during step 6.",
+          plan: "start it while the pasta water heats, in the skillet you'll use for the sauce"
+        }
+      },
+      steps: [
+        { title: "Prep everything first",
+          p: ["Finely chop <span class=\"amt\">1 shallot</span> and mince <span class=\"amt\">3 garlic cloves</span>. Measure about <span class=\"amt\">½ cup Parmesan</span>, roughly a third of the 6 oz bag."],
+          tip: "The cooking moves fast once it starts, so have everything ready next to the stove." },
+        { title: "Put the pasta water on",
+          p: ["Fill a large pot with about <span class=\"amt\">4 quarts of water</span>, add <span class=\"amt\">1 tablespoon of salt</span>, cover, and bring to a boil over high heat."],
+          tip: "The water takes about 10 minutes to boil." },
+        { title: "Cook the pasta", when: "Once the water boils",
+          p: ["Add about <span class=\"amt\">14 oz of pasta</span> (most of the 1 lb box) and stir. Cook it 1 minute less than the box says, about 10 minutes, so it still has a little bite.",
+              "<span class=\"amt\">Before you drain it, scoop out ½ cup of the pasta water</span> with a mug. You'll need it for the sauce."],
+          timer: [600, "pasta timer"] },
+        { title: "Soften the shallot and garlic", when: "While the pasta cooks",
+          p: ["Heat <span class=\"amt\">2 tablespoons of olive oil or butter</span> in a large skillet over medium. Cook the shallot and garlic, stirring often, until soft and fragrant, 2 to 3 minutes."],
+          extra: { sausage: "Made the crispy sausage? Skip the oil and use the fat left in the sausage pan." },
+          tip: "Don't let the garlic turn brown, or it will taste bitter.",
+          timer: [150, "garlic timer"] },
+        { title: "Deglaze the pan",
+          p: ["If you're using wine, pour in <span class=\"amt\">¼ cup</span> and scrape up any brown bits from the bottom. Let it bubble about 1 minute, until mostly gone.",
+              "For a creamy sauce, add <span class=\"amt\">½ cup heavy cream</span> and simmer 1 to 2 minutes, until slightly thickened."],
+          tip: "Skipping both? Ladle a splash of water from the pasta pot into the skillet instead." },
+        { title: "Bring it together",
+          p: ["Turn the heat to low. Add the drained pasta and about <span class=\"amt\">¼ cup of the saved pasta water</span>. Sprinkle in the Parmesan a handful at a time, tossing constantly, until the sauce turns glossy and coats the pasta."],
+          extra: { sausage: "Toss the crispy sausage back in now too." },
+          tip: "Add more pasta water a splash at a time if it looks dry. Keep the heat low: Parmesan clumps if the pan is too hot." },
+        { title: "Season and serve",
+          p: ["Taste it first, then add salt only if needed, since the cheese is already salty. Finish with <span class=\"amt\">black pepper</span>, a <span class=\"amt\">pinch of chili flakes</span> and extra Parmesan. Serve right away."] }
+      ]
+    },
+    {
+      id: "mashed", name: "Mashed potatoes", short: "Potatoes", kind: "Side", minutes: 35,
+      uses: [["potatoes", "2 lb"], ["butter", "4 tbsp (half a stick)"], ["milk", "½ cup"], ["sour-cream", "¼ cup", true], ["salt-pepper", "to taste"]],
+      steps: [
+        { title: "Cut the potatoes",
+          p: ["Peel <span class=\"amt\">2 lb Yukon Gold potatoes</span> and cut them into chunks of about 1½ inches."],
+          tip: "Keep the chunks about the same size so they all finish cooking at the same time." },
+        { title: "Boil the potatoes",
+          p: ["Put the potatoes in a large pot, cover them with <span class=\"amt\">cold water</span> by about 1 inch, and add <span class=\"amt\">1 tablespoon of salt</span>. Bring to a boil over high heat, then lower the heat so it simmers steadily.",
+              "Start the timer once it's simmering. They're done when a fork slides into a chunk easily."],
+          tip: "Starting in cold water cooks the potatoes evenly all the way through.",
+          timer: [1080, "potato timer"] },
+        { title: "Warm the butter and milk", when: "Near the end of the simmer",
+          p: ["Warm <span class=\"amt\">4 tbsp butter</span> and <span class=\"amt\">½ cup milk</span> in a small pan or the microwave until the butter melts."],
+          tip: "Warm milk and butter blend in smoothly. Cold dairy makes the potatoes stiff and lumpy." },
+        { title: "Drain and mash",
+          p: ["Drain the potatoes and put them back in the warm pot. Mash with a masher or a sturdy fork until mostly smooth. Pour in the warm butter and milk, add <span class=\"amt\">¼ cup sour cream</span> if you're using it, and stir gently. Season with salt and pepper to taste."],
+          tip: "Stir just until combined. Overmixing, or using a blender, makes them gluey. Add a splash more milk if they're too stiff." }
+      ]
+    }
+  ];
+
+  /* ---------- Saved meals: combinations of components ---------- */
+  var MEALS = [
+    { id: "pasta", name: "Sausage pasta", parts: ["sausage", "pasta"] },
+    { id: "chicken", name: "Bacon-wrapped chicken & mashed potatoes", parts: ["chicken", "mashed"] }
+  ];
+
+  var byId = {};
+  COMPONENTS.forEach(function (c) { byId[c.id] = c; });
+
+  /* ---------- Small helpers ---------- */
+  function getPref(k, fallback) { try { var v = localStorage.getItem(k); return v === null ? fallback : v; } catch (e) { return fallback; } }
+  function setPref(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function getJSON(k) { try { return JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) { return {}; } }
+  function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  var lastShop = null;
+
+  /* ---------- Timers ---------- */
+  var audioCtx = null, timerResets = [];
+  function unlockAudio() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) {}
+  }
+  function beep() {
+    try {
+      if (audioCtx) {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        var t = audioCtx.currentTime;
+        [0, 0.35, 0.7].forEach(function (o) {
+          var osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+          osc.frequency.value = 880;
+          g.gain.setValueAtTime(0.0001, t + o);
+          g.gain.exponentialRampToValueAtTime(0.3, t + o + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + o + 0.25);
+          osc.connect(g); g.connect(audioCtx.destination);
+          osc.start(t + o); osc.stop(t + o + 0.3);
+        });
+      }
+    } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+  }
+  function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m + ":" + (r < 10 ? "0" : "") + r; }
+  function setupTimer(btn) {
+    var total = Number(btn.dataset.seconds), end = 0, iv = null;
+    function idle() {
+      btn.textContent = "Start " + fmt(total) + " " + btn.dataset.label;
+      btn.classList.remove("running", "finished");
+      btn.setAttribute("aria-pressed", "false");
+    }
+    function tick() {
+      var left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      if (left <= 0) {
+        clearInterval(iv); iv = null;
+        btn.classList.remove("running"); btn.classList.add("finished");
+        btn.textContent = "Time's up! Tap to reset";
+        beep();
+        return;
+      }
+      btn.textContent = fmt(left) + " left, tap to stop";
+    }
+    btn.addEventListener("click", function () {
+      unlockAudio();
+      if (iv) { clearInterval(iv); iv = null; idle(); return; }
+      if (btn.classList.contains("finished")) { idle(); return; }
+      end = Date.now() + total * 1000;
+      btn.classList.add("running"); btn.setAttribute("aria-pressed", "true");
+      tick(); iv = setInterval(tick, 250);
+    });
+    idle();
+    return function () { if (iv) { clearInterval(iv); iv = null; } idle(); };
+  }
+
+  /* ---------- Checklist wiring for a panel ---------- */
+  function wireChecks(panel, storeKey) {
+    var boxes = Array.prototype.slice.call(panel.querySelectorAll('.list input[type="checkbox"]'));
+    var saved = getJSON(storeKey);
+    var bar = panel.querySelector(".bar span"), count = panel.querySelector(".count");
+    function update() {
+      var done = 0;
+      boxes.forEach(function (b) { b.closest("li").classList.toggle("checked", b.checked); if (b.checked) done++; });
+      count.textContent = done + " of " + boxes.length;
+      bar.style.width = (boxes.length ? done / boxes.length * 100 : 0) + "%";
+    }
+    function save() {
+      var state = getJSON(storeKey);
+      boxes.forEach(function (b) { state[b.id] = b.checked; });
+      setPref(storeKey, JSON.stringify(state));
+    }
+    boxes.forEach(function (b) {
+      b.checked = !!saved[b.id];
+      b.addEventListener("change", function () { update(); save(); });
+    });
+    panel._uncheck = function () { boxes.forEach(function (b) { b.checked = false; }); update(); save(); };
+    update();
+  }
+
+  /* ---------- Render: merged shopping list ---------- */
+  function renderShop(parts) {
+    var box = document.getElementById("shop-list");
+    box.innerHTML = "";
+    lastShop = null;
+    if (!parts.length) { box.appendChild(el("p", "empty", "Pick at least one component above to build your shopping list.")); wireChecks(document.getElementById("shop"), "shop-checks-v2"); return; }
+    var merged = {}, order = [];
+    parts.forEach(function (cid) {
+      byId[cid].uses.forEach(function (u) {
+        var key = u[0];
+        if (!merged[key]) { merged[key] = { uses: [], allOpt: true }; order.push(key); }
+        merged[key].uses.push({ comp: byId[cid], amt: u[1], opt: !!u[2] });
+        if (!u[2]) merged[key].allOpt = false;
+      });
+    });
+    lastShop = { merged: merged, order: order };
+    var n = 0;
+    storeSections().forEach(function (sec) {
+      var keys = order.filter(function (k) { return ITEMS[k].section === sec.id; });
+      if (!keys.length) return;
+      n++;
+      var s = el("section");
+      s.appendChild(el("h2", null, '<span class="step">' + n + "</span>" + sec.label.replace("&", "&amp;")));
+      var ul = el("ul");
+      keys.forEach(function (k) {
+        var it = ITEMS[k], m = merged[k], usage = "";
+        if (m.uses.length === 1) {
+          if (m.uses[0].amt) usage = "You need " + m.uses[0].amt;
+        } else {
+          usage = m.uses.map(function (u) { return u.comp.short + ": " + (u.amt || "some") + (u.opt && !m.allOpt ? " (optional)" : ""); }).join(" · ");
+        }
+        var w = storeId === "walmart" && it.walmart;
+        var buy = (w && w.buy) || it.buy, price = w && w.price;
+        var li = el("li");
+        li.innerHTML = '<label><input type="checkbox" id="s-' + k + '"><span class="item"><span class="name">' + it.name +
+          (m.allOpt ? '<span class="opt">optional</span>' : "") + "</span>" +
+          (buy ? '<span class="detail">' + buy + "</span>" : "") +
+          (usage ? '<span class="use">' + usage + "</span>" : "") + "</span>" +
+          (price ? '<span class="price">' + price + "</span>" : "") + "</label>";
+        ul.appendChild(li);
+      });
+      s.appendChild(ul);
+      box.appendChild(s);
+    });
+    wireChecks(document.getElementById("shop"), "shop-checks-v2");
+  }
+
+  /* ---------- Render: cooking plan and steps ---------- */
+  function renderCook(parts) {
+    timerResets.forEach(function (r) { r(); });
+    timerResets = [];
+    var box = document.getElementById("cook-list");
+    box.innerHTML = "";
+    if (!parts.length) { box.appendChild(el("p", "empty", "Pick at least one component above to see the cooking steps.")); wireChecks(document.getElementById("cook"), "cook-checks-v2"); return; }
+
+    var comps = parts.map(function (id) { return byId[id]; }).sort(function (a, b) { return b.minutes - a.minutes; });
+    var max = comps[0].minutes;
+
+    if (comps.length > 1) {
+      var plan = el("div", "plan");
+      plan.appendChild(el("h2", null, "Game plan"));
+      var ol = el("ol");
+      comps.forEach(function (c) {
+        var text = null;
+        comps.forEach(function (o) { if (o !== c && o.with && o.with[c.id] && o.with[c.id].plan) text = o.with[c.id].plan; });
+        if (!text) {
+          var off = max - c.minutes;
+          text = off <= 0 ? "start right away" : "start about " + off + " minutes in";
+        }
+        ol.appendChild(el("li", null, "<strong>" + c.name + "</strong>: " + text + ' <span class="when-text">(about ' + c.minutes + " min)</span>"));
+      });
+      plan.appendChild(ol);
+      plan.appendChild(el("p", "tip", "Everything should be ready at about the same time, " + max + " minutes after you start."));
+      box.appendChild(plan);
+    }
+
+    comps.forEach(function (c) {
+      var sec = el("section");
+      var head = el("div", "comp-head");
+      head.appendChild(el("h2", null, c.name));
+      head.appendChild(el("span", "meta", c.kind + " · about " + c.minutes + " min"));
+      sec.appendChild(head);
+      parts.forEach(function (o) { if (c.with && c.with[o]) sec.appendChild(el("p", "note", c.with[o].note)); });
+      var ol = el("ol", "steps");
+      c.steps.forEach(function (st, i) {
+        var id = "k-" + c.id + "-" + (i + 1);
+        var li = el("li", "step-card");
+        var html = '<span class="num" aria-hidden="true">' + (i + 1) + '</span><div class="step-body">' +
+          (st.when ? '<span class="when">' + st.when + "</span>" : "") +
+          '<label class="step-title" for="' + id + '"><span>' + st.title + '</span><input type="checkbox" id="' + id + '"></label>' +
+          st.p.map(function (t) { return "<p>" + t + "</p>"; }).join("");
+        if (st.extra) parts.forEach(function (o) { if (st.extra[o]) html += '<p class="note">' + st.extra[o] + "</p>"; });
+        if (st.tip) html += '<p class="tip">' + st.tip + "</p>";
+        if (st.timer) html += '<button type="button" class="timer" data-seconds="' + st.timer[0] + '" data-label="' + st.timer[1] + '"></button>';
+        html += "</div>";
+        li.innerHTML = html;
+        ol.appendChild(li);
+      });
+      sec.appendChild(ol);
+      box.appendChild(sec);
+    });
+
+    Array.prototype.forEach.call(box.querySelectorAll("button.timer"), function (b) { timerResets.push(setupTimer(b)); });
+    wireChecks(document.getElementById("cook"), "cook-checks-v2");
+  }
+
+  /* ---------- Meal picker, component chips and tabs ---------- */
+  var select = document.getElementById("meal");
+  var chipsBox = document.getElementById("chips");
+  var title = document.getElementById("meal-title");
+  var sub = document.getElementById("meal-sub");
+  var tabs = { shop: document.getElementById("tab-shop"), cook: document.getElementById("tab-cook") };
+  var state = { parts: [], view: "shop" };
+  var wake = null;
+
+  MEALS.forEach(function (m) { var o = el("option", null, null); o.value = m.id; o.textContent = m.name; select.appendChild(o); });
+  var custom = el("option"); custom.value = "custom"; custom.textContent = "Build your own"; select.appendChild(custom);
+
+  COMPONENTS.forEach(function (c) {
+    var lab = el("label", "chip");
+    lab.innerHTML = '<input type="checkbox" id="part-' + c.id + '" value="' + c.id + '"><span class="chip-text"><span class="chip-name">' + c.name +
+      '</span><span class="chip-meta">' + c.kind + " · " + c.minutes + " min</span></span>";
+    chipsBox.appendChild(lab);
+    lab.querySelector("input").addEventListener("change", function () {
+      state.parts = COMPONENTS.filter(function (x) { return document.getElementById("part-" + x.id).checked; }).map(function (x) { return x.id; });
+      render(true);
+    });
+  });
+
+  function matchMeal(parts) {
+    var key = parts.slice().sort().join(",");
+    for (var i = 0; i < MEALS.length; i++) if (MEALS[i].parts.slice().sort().join(",") === key) return MEALS[i];
+    return null;
+  }
+
+  function keepAwake() {
+    if (wake || !("wakeLock" in navigator)) return;
+    navigator.wakeLock.request("screen").then(function (l) {
+      wake = l;
+      l.addEventListener("release", function () { wake = null; });
+    }).catch(function () {});
+  }
+
+  function showView() {
+    Object.keys(tabs).forEach(function (k) {
+      var on = k === state.view;
+      tabs[k].setAttribute("aria-selected", on ? "true" : "false");
+      tabs[k].tabIndex = on ? 0 : -1;
+      document.getElementById(k).hidden = !on;
+    });
+    setPref("meal-view", state.view);
+    if (state.view === "cook") keepAwake();
+  }
+
+  function render(partsChanged) {
+    COMPONENTS.forEach(function (c) {
+      var on = state.parts.indexOf(c.id) >= 0;
+      var cb = document.getElementById("part-" + c.id);
+      cb.checked = on;
+      cb.closest(".chip").classList.toggle("on", on);
+    });
+    var meal = matchMeal(state.parts);
+    select.value = meal ? meal.id : "custom";
+    if (meal) title.textContent = meal.name;
+    else if (state.parts.length) title.textContent = COMPONENTS.filter(function (c) { return state.parts.indexOf(c.id) >= 0; }).map(function (c) { return c.name; }).join(" + ");
+    else title.textContent = "Build your own meal";
+    var mins = state.parts.reduce(function (m, id) { return Math.max(m, byId[id].minutes); }, 0);
+    sub.textContent = state.parts.length ? "Serves 4. Ready in about " + mins + " minutes." : "Tick the components you want to cook together.";
+    setPref("meal-parts", JSON.stringify(state.parts));
+    if (partsChanged) { renderShop(state.parts); renderCook(state.parts); }
+    showView();
+  }
+
+  select.addEventListener("change", function () {
+    var m = MEALS.filter(function (x) { return x.id === select.value; })[0];
+    if (m) { state.parts = m.parts.slice(); render(true); }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".panel .reset"), function (b) {
+    b.addEventListener("click", function () {
+      var panel = b.closest(".panel");
+      if (panel._uncheck) panel._uncheck();
+      if (panel.id === "cook") timerResets.forEach(function (r) { r(); });
+    });
+  });
+  tabs.shop.addEventListener("click", function () { state.view = "shop"; showView(); });
+  tabs.cook.addEventListener("click", function () { state.view = "cook"; showView(); });
+  [tabs.shop, tabs.cook].forEach(function (t) {
+    t.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        state.view = t === tabs.shop ? "cook" : "shop";
+        showView(); tabs[state.view].focus(); e.preventDefault();
+      }
+    });
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && state.view === "cook") keepAwake();
+  });
+
+  /* ---------- General grocery list ---------- */
+  var G_IDS = G_BY_ID;
+  var GUESS = [
+    [/ice cream|frozen|popsicle|pizza/, "frozen"],
+    [/peanut butter|olive oil|vegetable oil|cooking spray|pasta|spaghetti|rice|cereal|oatmeal|oats|beans|soup|canned|sauce|salsa|ketchup|mustard|mayo|honey|jam|jelly|vinegar|broth|noodle|tuna/, "pantry"],
+    [/sour cream|cream cheese|milk|cheese|butter|yogurt|yoghurt|eggs?\b|cream|parmesan/, "dairy"],
+    [/bell pepper|jalape/, "produce"],
+    [/flour|sugar|salt|pepper|spice|paprika|cinnamon|cumin|oregano|baking|yeast|vanilla|cayenne|chili flakes|powder/, "spices"],
+    [/chicken|beef|pork|sausage|bacon|turkey|steak|\bham\b|fish|salmon|shrimp|ground|meat/, "meat"],
+    [/paper towel|toilet|trash|foil|soap|detergent|sponge|napkin|cleaner|\bbags?\b|plastic wrap|batter(y|ies)|light bulb/, "household"],
+    [/shampoo|conditioner|toothpaste|toothbrush|deodorant|razor|lotion|vitamin|floss|sunscreen/, "personal"],
+    [/bread|bagel|\bbuns?\b|tortilla|\brolls?\b|croissant|muffin|cake/, "bakery"],
+    [/apple|banana|lettuce|onion|shallot|potato|tomato|garlic|carrot|avocado|lemon|lime|spinach|fruit|berr|grape|cucumber|celery|herb|parsley|cilantro|basil|mushroom|broccoli|orange|salad|kale|zucchini/, "produce"],
+    [/chips|cookie|cracker|soda|juice|water|coffee|\btea\b|beer|wine|snack|candy|chocolate|nuts/, "snacks"]
+  ];
+  function guessSection(name) {
+    var s = name.toLowerCase();
+    for (var i = 0; i < GUESS.length; i++) if (GUESS[i][0].test(s)) return GUESS[i][1];
+    return "other";
+  }
+
+  function makeLocalStore() {
+    var KEY = "groceries-local-v1", listeners = [];
+    function read() { try { return JSON.parse(localStorage.getItem(KEY) || "[]") || []; } catch (e) { return []; } }
+    function write(a) { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} listeners.forEach(function (f) { f(a); }); }
+    return {
+      kind: "local",
+      subscribe: function (fn) {
+        listeners.push(fn); fn(read());
+        return function () { listeners = listeners.filter(function (f) { return f !== fn; }); };
+      },
+      add: function (item) { var a = read(); item.id = "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); a.push(item); write(a); return Promise.resolve(); },
+      update: function (id, patch) { write(read().map(function (x) { return x.id === id ? Object.assign({}, x, patch) : x; })); return Promise.resolve(); },
+      remove: function (id) { write(read().filter(function (x) { return x.id !== id; })); return Promise.resolve(); }
+    };
+  }
+  function makeDbStore(db) {
+    var col = db.collection("groceries");
+    return {
+      kind: "db",
+      subscribe: function (fn, onErr) {
+        return col.onSnapshot(function (snap) {
+          fn(snap.docs.map(function (d) { var x = Object.assign({}, d.data()); x.id = d.id; return x; }), snap.metadata);
+        }, onErr);
+      },
+      add: function (item) { return col.add(item); },
+      update: function (id, patch) { return col.doc(id).update(patch); },
+      remove: function (id) { return col.doc(id).delete(); }
+    };
+  }
+
+  var gStore = null, gItems = [], gLoaded = false;
+  var gList = document.getElementById("g-list");
+  var gStatus = document.getElementById("g-status");
+  var gName = document.getElementById("g-name"), gQty = document.getElementById("g-qty");
+  var gSection = document.getElementById("g-section"), gAdd = document.getElementById("g-add");
+  var gBadge = document.getElementById("g-badge");
+  var gSectionTouched = false;
+
+  G_SECTIONS.forEach(function (s) { var o = el("option"); o.value = s.id; o.textContent = s.label; gSection.appendChild(o); });
+  gSection.value = "other";
+  gName.addEventListener("input", function () { if (!gSectionTouched) gSection.value = guessSection(gName.value); });
+  gSection.addEventListener("change", function () { gSectionTouched = true; });
+
+  function gError(msg) { gStatus.textContent = msg; }
+
+  function renderGroceries() {
+    gList.innerHTML = "";
+    var items = gItems.slice().sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+    var done = items.filter(function (i) { return i.checked; }).length;
+    var prog = document.getElementById("g-progress");
+    prog.querySelector(".count").textContent = done + " of " + items.length;
+    prog.querySelector(".bar span").style.width = (items.length ? done / items.length * 100 : 0) + "%";
+    var left = items.length - done;
+    gBadge.hidden = left === 0;
+    gBadge.textContent = left;
+    document.getElementById("g-clear").hidden = done === 0;
+
+    if (!items.length) {
+      gList.appendChild(el("p", "empty", gLoaded
+        ? "Your grocery list is empty. Add items above, or open Meals and tap “Add to grocery list” under a meal's shopping list."
+        : "Loading your grocery list…"));
+      return;
+    }
+    var n = 0;
+    storeSections().forEach(function (sec) {
+      var its = items.filter(function (i) { var s = G_IDS[i.section] ? i.section : "other"; return s === sec.id; });
+      if (!its.length) return;
+      n++;
+      var s = el("section");
+      s.appendChild(el("h2", null, '<span class="step">' + n + "</span>" + sec.label.replace("&", "&amp;")));
+      var ul = el("ul");
+      its.forEach(function (it) {
+        var li = el("li", "g-item" + (it.checked ? " checked" : ""));
+        var lab = el("label");
+        var cb = el("input"); cb.type = "checkbox"; cb.id = "g-" + it.id; cb.checked = !!it.checked;
+        var wrap = el("span", "item");
+        var nm = el("span", "name"); nm.textContent = String(it.name || "");
+        wrap.appendChild(nm);
+        if (it.note) { var dt = el("span", "detail"); dt.textContent = String(it.note); wrap.appendChild(dt); }
+        lab.appendChild(cb); lab.appendChild(wrap);
+        var del = el("button", "del"); del.type = "button"; del.textContent = "×";
+        del.setAttribute("aria-label", "Remove " + String(it.name || "item"));
+        cb.addEventListener("change", function () {
+          li.classList.toggle("checked", cb.checked);
+          gStore.update(it.id, { checked: cb.checked }).catch(function () { gError("That change didn't save. Check your connection and try again."); });
+        });
+        del.addEventListener("click", function () {
+          gStore.remove(it.id).catch(function () { gError("Couldn't remove that item. Check your connection and try again."); });
+        });
+        li.appendChild(lab); li.appendChild(del);
+        ul.appendChild(li);
+      });
+      s.appendChild(ul);
+      gList.appendChild(s);
+    });
+  }
+
+  document.getElementById("g-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = gName.value.trim();
+    if (!name || !gStore) return;
+    var item = { name: name, note: gQty.value.trim(), section: gSection.value, checked: false, createdAt: Date.now() };
+    gName.value = ""; gQty.value = ""; gSection.value = "other"; gSectionTouched = false;
+    gName.focus();
+    gStore.add(item).catch(function (err) {
+      gError(err && err.code === "quota_exceeded" ? "Your list is full. Remove checked items to make room." : "That item didn't save. Check your connection and try again.");
+    });
+  });
+
+  var clearBtn = document.getElementById("g-clear"), clearArmed = null;
+  clearBtn.addEventListener("click", function () {
+    var checked = gItems.filter(function (i) { return i.checked; });
+    if (!checked.length) return;
+    if (!clearArmed) {
+      clearBtn.textContent = "Tap again to remove " + checked.length + (checked.length === 1 ? " item" : " items");
+      clearArmed = setTimeout(function () { clearArmed = null; clearBtn.textContent = "Remove checked items"; }, 4000);
+      return;
+    }
+    clearTimeout(clearArmed); clearArmed = null; clearBtn.textContent = "Remove checked items";
+    checked.reduce(function (p, i) { return p.then(function () { return gStore.remove(i.id); }); }, Promise.resolve())
+      .catch(function () { gError("Some items couldn't be removed. Check your connection and try again."); });
+  });
+
+  var mealToG = document.getElementById("meal-to-g"), mealAddStatus = document.getElementById("meal-add-status");
+  mealToG.addEventListener("click", function () {
+    if (!gStore || !lastShop) return;
+    var have = {};
+    gItems.forEach(function (i) { if (!i.checked) have[String(i.name).toLowerCase()] = true; });
+    var toAdd = [], skippedOpt = false, base = Date.now();
+    lastShop.order.forEach(function (k) {
+      var m = lastShop.merged[k], it = ITEMS[k];
+      if (m.allOpt) { skippedOpt = true; return; }
+      if (have[it.name.toLowerCase()]) return;
+      var note = m.uses.filter(function (u) { return !u.opt; }).map(function (u) { return u.comp.short + (u.amt ? ": " + u.amt : ""); }).join(" · ");
+      var section = G_BY_ID[it.section] ? it.section : "other";
+      toAdd.push({ name: it.name, note: note, section: section, checked: false, createdAt: base + toAdd.length });
+    });
+    if (!toAdd.length) { mealAddStatus.textContent = "Everything for this meal is already on your grocery list."; return; }
+    mealToG.disabled = true;
+    toAdd.reduce(function (p, item) { return p.then(function () { return gStore.add(item); }); }, Promise.resolve())
+      .then(function () {
+        mealAddStatus.textContent = "Added " + toAdd.length + (toAdd.length === 1 ? " item" : " items") + " to your grocery list." + (skippedOpt ? " Optional items were left off." : "");
+      })
+      .catch(function () { mealAddStatus.textContent = "Some items didn't save. Check your connection and try again."; })
+      .then(function () { mealToG.disabled = false; });
+  });
+
+  /* Firebase (used on the GitHub website, where the Claude store isn't available) */
+  function makeFirebaseStore(fs) {
+    var col = fs.collection("groceries");
+    return {
+      kind: "cloud",
+      subscribe: function (fn, onErr) {
+        return col.onSnapshot({ includeMetadataChanges: true }, function (snap) {
+          fn(snap.docs.map(function (d) { var x = Object.assign({}, d.data()); x.id = d.id; return x; }), { fromCache: snap.metadata.fromCache });
+        }, onErr);
+      },
+      add: function (item) { return col.add(item); },
+      update: function (id, patch) { return col.doc(id).update(patch); },
+      remove: function (id) { return col.doc(id).delete(); }
+    };
+  }
+
+  var gUnsub = null, gSlow = null;
+  function startStore(store, okText) {
+    if (gUnsub) { try { gUnsub(); } catch (e) {} gUnsub = null; }
+    clearTimeout(gSlow);
+    gStore = store; gItems = []; gLoaded = false;
+    gAdd.disabled = false;
+    mealToG.disabled = false;
+    renderGroceries();
+    if (store.kind === "local") {
+      gStatus.textContent = okText || "Saved on this device only.";
+      gUnsub = store.subscribe(function (items) { gItems = items; gLoaded = true; renderGroceries(); });
+      return;
+    }
+    var ok = okText || "Saved to your Claude account, so it's the same on every device.";
+    gStatus.textContent = "Loading your list…";
+    gSlow = setTimeout(function () {
+      gStatus.textContent = gLoaded ? "Can't reach your saved list right now, so this may be out of date." : "Can't reach your saved list yet. It will appear once the connection is back.";
+    }, 10000);
+    gUnsub = store.subscribe(function (items, meta) {
+      gItems = items; gLoaded = true;
+      if (meta && !meta.fromCache) { clearTimeout(gSlow); gStatus.textContent = ok; }
+      renderGroceries();
+    }, function (err) {
+      clearTimeout(gSlow);
+      gLoaded = true;
+      gStatus.textContent = store.kind === "cloud"
+        ? "This account doesn't have access to the shared list. Ask whoever set up the list to add your email."
+        : "Your saved list isn't available right now. Reopen the page to try again.";
+      gAdd.disabled = true; mealToG.disabled = true;
+      renderGroceries();
+    });
+  }
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  function startFirebase(cfg) {
+    var base = "https://www.gstatic.com/firebasejs/10.12.2/";
+    var authBox = document.getElementById("g-auth"), authText = document.getElementById("g-auth-text");
+    var signIn = document.getElementById("g-signin"), signOut = document.getElementById("g-signout");
+    gStatus.textContent = "Loading your list…";
+    loadScript(base + "firebase-app-compat.js")
+      .then(function () { return Promise.all([loadScript(base + "firebase-auth-compat.js"), loadScript(base + "firebase-firestore-compat.js")]); })
+      .then(function () {
+        firebase.initializeApp(cfg);
+        var auth = firebase.auth(), fs = firebase.firestore();
+        authBox.hidden = false;
+        signIn.addEventListener("click", function () {
+          var provider = new firebase.auth.GoogleAuthProvider();
+          auth.signInWithPopup(provider).catch(function (e) {
+            if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment")) return auth.signInWithRedirect(provider);
+            if (e && e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") gStatus.textContent = "Sign-in didn't finish. Try again.";
+          });
+        });
+        signOut.addEventListener("click", function () { auth.signOut(); });
+        auth.onAuthStateChanged(function (u) {
+          signIn.hidden = !!u; signOut.hidden = !u;
+          authText.textContent = u ? "Signed in as " + (u.email || u.displayName || "you") : "Sign in to see your household's shared list.";
+          if (u) startStore(makeFirebaseStore(fs), "Shared with your household. Changes show up on everyone's phone.");
+          else startStore(makeLocalStore(), "Saved on this device only until you sign in.");
+        });
+      })
+      .catch(function () { startStore(makeLocalStore(), "Couldn't load the shared list service, so this list is saved on this device only."); });
+  }
+
+  renderGroceries();
+  if (window.claude && typeof window.claude.use === "function") {
+    Promise.resolve(window.claude.use("db")).then(function (db) { startStore(db ? makeDbStore(db) : makeLocalStore()); })
+      .catch(function () { startStore(makeLocalStore()); });
+  } else if (window.FIREBASE_CONFIG) {
+    startFirebase(window.FIREBASE_CONFIG);
+  } else {
+    startStore(makeLocalStore());
+  }
+
+  /* ---------- Top-level sections ---------- */
+  var topTabs = { meals: document.getElementById("top-meals"), groceries: document.getElementById("top-groceries") };
+  function showTop(name) {
+    Object.keys(topTabs).forEach(function (k) {
+      var on = k === name;
+      topTabs[k].setAttribute("aria-selected", on ? "true" : "false");
+      topTabs[k].tabIndex = on ? 0 : -1;
+      document.getElementById(k + "-view").hidden = !on;
+    });
+    setPref("top-view", name);
+  }
+  topTabs.meals.addEventListener("click", function () { showTop("meals"); });
+  topTabs.groceries.addEventListener("click", function () { showTop("groceries"); });
+  [topTabs.meals, topTabs.groceries].forEach(function (t) {
+    t.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        var next = t === topTabs.meals ? "groceries" : "meals";
+        showTop(next); topTabs[next].focus(); e.preventDefault();
+      }
+    });
+  });
+
+  /* ---------- Start-up ---------- */
+  var hash = location.hash.replace("#", "");
+  var fromHash = MEALS.filter(function (m) { return m.id === hash; })[0];
+  var savedParts = null;
+  try { savedParts = JSON.parse(getPref("meal-parts", "null")); } catch (e) { savedParts = null; }
+  if (fromHash) state.parts = fromHash.parts.slice();
+  else if (Array.isArray(savedParts)) state.parts = savedParts.filter(function (id) { return byId[id]; });
+  else {
+    var oldDish = getPref("recipes-dish", "pasta");
+    state.parts = (MEALS.filter(function (m) { return m.id === oldDish; })[0] || MEALS[0]).parts.slice();
+  }
+  state.view = getPref("meal-view", getPref("sausage-pasta-tab", "shop")) === "cook" ? "cook" : "shop";
+  var storeSel = document.getElementById("store");
+  STORES.forEach(function (s) { var o = el("option"); o.value = s.id; o.textContent = s.name; storeSel.appendChild(o); });
+  function applyStore() {
+    var s = currentStore();
+    storeSel.value = s.id;
+    document.getElementById("shop-sub").textContent = "One combined list for everything you picked, sorted by a typical " + s.name + " layout. Tap an item to check it off.";
+    document.getElementById("g-sub").textContent = "Anything you need from " + s.name + ", sorted by its typical layout.";
+    setPref("store", s.id);
+  }
+  storeSel.addEventListener("change", function () {
+    storeId = storeSel.value;
+    applyStore();
+    renderShop(state.parts);
+    renderGroceries();
+  });
+  storeId = getPref("store", "walmart");
+  if (!STORES.some(function (s) { return s.id === storeId; })) storeId = "walmart";
+  applyStore();
+  renderGroceries();
+
+  render(true);
+  showTop(hash === "groceries" ? "groceries" : (fromHash ? "meals" : (getPref("top-view", "meals") === "groceries" ? "groceries" : "meals")));
+})();
+</script>
+
+</body>
+</html>
