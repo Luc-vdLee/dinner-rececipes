@@ -40,6 +40,8 @@ Grocery documents: `{name, note, section, checked, createdAt}`.
 
 Meal checklists and cooking-step checks are per-device (`localStorage`) on purpose.
 
+The Firebase store keeps an offline copy (`enablePersistence`). Its write promises settle only when the server confirms, so never chain shared-list writes one after another; use `writeAll`. Sign-in uses a pop-up only: the redirect flow can't work on GitHub Pages because the auth domain differs from the site's.
+
 ## Design and conventions
 
 - Colors are CSS tokens on `:root` with dark-mode overrides; keep every color a token.

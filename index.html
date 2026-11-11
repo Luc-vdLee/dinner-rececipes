@@ -3,13 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
-<script src="firebase-config.js"></script>
-</head>
-<body>
-<title>Walmart Dinner Recipes</title>
+<title>Dinner Recipes</title>
+<meta name="description" content="Mix-and-match dinner components with cooking steps and timers, plus a shared grocery list sorted by your store's layout.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f141c" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Dinner Recipes">
+<meta property="og:description" content="Dinner plans, cooking steps with timers, and our shared grocery list.">
+<meta property="og:type" content="website">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
 /* Layout: one narrow column; pick a meal or tick components, then switch between the merged Walmart list and the cooking plan */
 :root {
@@ -165,6 +173,9 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
 .meal-add button.primary { padding: 12px 16px; }
 @media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
 </style>
+<script src="firebase-config.js"></script>
+</head>
+<body>
 
 <div class="wrap">
   <nav class="topnav" role="tablist" aria-label="Sections">
@@ -231,7 +242,7 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
       <label class="picker-label" for="g-name">Add an item</label>
       <div class="add-row">
         <input type="text" id="g-name" placeholder="e.g. bananas" maxlength="80" enterkeyhint="done">
-        <input type="text" id="g-qty" placeholder="Amount (optional)" maxlength="40" aria-label="Amount">
+        <input type="text" id="g-qty" placeholder="Amount" maxlength="40" aria-label="Amount">
       </div>
       <div class="add-row">
         <span class="select-wrap grow"><select id="g-section" aria-label="Store section"></select></span>
@@ -784,7 +795,7 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
 
     if (!items.length) {
       gList.appendChild(el("p", "empty", gLoaded
-        ? "Your grocery list is empty. Add items above, or open Meals and tap “Add to grocery list” under a meal's shopping list."
+        ? "Your grocery list is empty. Add items above, or open Meals and tap “Add this meal to my grocery list”."
         : "Loading your grocery list…"));
       return;
     }
@@ -834,6 +845,13 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
     });
   });
 
+  /* Run a write for every item. The shared list saves each write on the phone at once but only
+     settles it when the server confirms, so with a weak signal a chain would stall on the first one. */
+  function writeAll(list, fn) {
+    if (gStore.kind === "cloud") return Promise.all(list.map(fn));
+    return list.reduce(function (p, x) { return p.then(function () { return fn(x); }); }, Promise.resolve());
+  }
+
   var clearBtn = document.getElementById("g-clear"), clearArmed = null;
   clearBtn.addEventListener("click", function () {
     var checked = gItems.filter(function (i) { return i.checked; });
@@ -844,7 +862,7 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
       return;
     }
     clearTimeout(clearArmed); clearArmed = null; clearBtn.textContent = "Remove checked items";
-    checked.reduce(function (p, i) { return p.then(function () { return gStore.remove(i.id); }); }, Promise.resolve())
+    writeAll(checked, function (i) { return gStore.remove(i.id); })
       .catch(function () { gError("Some items couldn't be removed. Check your connection and try again."); });
   });
 
@@ -863,13 +881,16 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
       toAdd.push({ name: it.name, note: note, section: section, checked: false, createdAt: base + toAdd.length });
     });
     if (!toAdd.length) { mealAddStatus.textContent = "Everything for this meal is already on your grocery list."; return; }
-    mealToG.disabled = true;
-    toAdd.reduce(function (p, item) { return p.then(function () { return gStore.add(item); }); }, Promise.resolve())
-      .then(function () {
-        mealAddStatus.textContent = "Added " + toAdd.length + (toAdd.length === 1 ? " item" : " items") + " to your grocery list." + (skippedOpt ? " Optional items were left off." : "");
-      })
+    var cloud = gStore.kind === "cloud";
+    function added() {
+      mealAddStatus.textContent = "Added " + toAdd.length + (toAdd.length === 1 ? " item" : " items") + " to your grocery list." + (skippedOpt ? " Optional items were left off." : "");
+    }
+    if (!cloud) mealToG.disabled = true;
+    var work = writeAll(toAdd, function (item) { return gStore.add(item); });
+    if (cloud) added();
+    work.then(function () { if (!cloud) added(); })
       .catch(function () { mealAddStatus.textContent = "Some items didn't save. Check your connection and try again."; })
-      .then(function () { mealToG.disabled = false; });
+      .then(function () { if (!cloud) mealToG.disabled = false; });
   });
 
   /* Firebase (used on the GitHub website, where the Claude store isn't available) */
@@ -913,7 +934,7 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
     }, function (err) {
       clearTimeout(gSlow);
       gLoaded = true;
-      gStatus.textContent = store.kind === "cloud"
+      gStatus.textContent = store.kind === "cloud" && err && err.code === "permission-denied"
         ? "This account doesn't have access to the shared list. Ask whoever set up the list to add your email."
         : "Your saved list isn't available right now. Reopen the page to try again.";
       gAdd.disabled = true; mealToG.disabled = true;
@@ -939,12 +960,18 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
       .then(function () {
         firebase.initializeApp(cfg);
         var auth = firebase.auth(), fs = firebase.firestore();
+        /* Keep a copy on the phone so the list still opens with no signal in the store */
+        fs.enablePersistence({ synchronizeTabs: true }).catch(function () {});
         authBox.hidden = false;
         signIn.addEventListener("click", function () {
           var provider = new firebase.auth.GoogleAuthProvider();
           auth.signInWithPopup(provider).catch(function (e) {
-            if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment")) return auth.signInWithRedirect(provider);
-            if (e && e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") gStatus.textContent = "Sign-in didn't finish. Try again.";
+            var code = e && e.code;
+            if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return;
+            gStatus.textContent = code === "auth/popup-blocked" ? "Your browser blocked the sign-in window. Allow pop-ups for this site, then try again."
+              : code === "auth/operation-not-supported-in-this-environment" ? "Sign-in doesn't work in this browser. Open this page in Safari or Chrome."
+              : code === "auth/unauthorized-domain" ? "Sign-in isn't set up for this web address yet."
+              : "Sign-in didn't finish. Try again.";
           });
         });
         signOut.addEventListener("click", function () { auth.signOut(); });
@@ -1027,5 +1054,7 @@ select.compact { padding: 9px 40px 9px 12px; font-size: 0.95rem; }
 })();
 </script>
 
+</body>
+</html>
 </body>
 </html>
