@@ -32,19 +32,22 @@ Copy style for steps: plain, direct sentences; amounts wrapped in `<span class="
 
 The page picks a store at runtime:
 
-1. Inside a Claude artifact (`window.claude.use` exists): the artifact's `db` capability, collection `groceries`.
-2. `window.FIREBASE_CONFIG` set (this website): Firebase Firestore, collection `groceries`, with Google sign-in. Who can read and write is controlled by Firestore security rules in the Firebase console (an email allowlist), not by anything in this repo. Never put people's email addresses in this public repo.
-3. Otherwise: `localStorage` on that device only.
+1. `window.FIREBASE_CONFIG` set and signed in with Google (this website): Firebase Firestore, collection `groceries`. Who can read and write is controlled by Firestore security rules in the Firebase console (an email allowlist), not by anything in this repo. Never put people's email addresses in this public repo.
+2. Otherwise (no config, or signed out): `localStorage` on that device only.
 
-Grocery documents: `{name, note, section, checked, createdAt, addedBy?, checkedBy?}`. `addedBy` and `checkedBy` are first names from the Google sign-in, set only on the shared (Firebase) list.
+The old Claude artifact copy is retired; there is no artifact storage path any more.
 
-Adding an item that is already on the list unchecked (matched by `normName`) asks first: merge amounts, add anyway, or skip. Go through `findListed` and `askDup` for any new way of adding items.
+Grocery documents: `{name, note, section, checked, createdAt, addedBy?, checkedBy?}`. `addedBy` and `checkedBy` are first names from the Google sign-in, set only on the shared list. Checked items render in a collapsed "In the cart" group below the sections.
 
-Planned work is in `TODO.md`.
+Adding an item that is already on the list unchecked asks first: merge amounts, add anyway, or skip. A match is the same name (`normName`) or the same main word (`looseMatch`; words in `DIFFERENT` such as "peanut" block a match). Go through `findListed` and `askDup` for any new way of adding items.
 
-Meal checklists and cooking-step checks are per-device (`localStorage`) on purpose.
+Meal shopping check marks are shared while signed in: Firestore document `mealChecks/shop`, `{checks: {<checkbox id>: bool}}`, mirrored into `localStorage` (`shop-checks-v2`), which is also the signed-out fallback. Cooking-step checks are per-device on purpose.
+
+The Firestore rules allow three collections: `groceries`, `history` (reserved for purchase history and staples, see `TODO.md`) and `mealChecks`. A new collection needs a rules change in the console first.
 
 The Firebase store keeps an offline copy (`enablePersistence`). Its write promises settle only when the server confirms, so never chain shared-list writes one after another; use `writeAll`. Sign-in uses a pop-up only: the redirect flow can't work on GitHub Pages because the auth domain differs from the site's.
+
+Planned work is in `TODO.md`.
 
 ## Design and conventions
 

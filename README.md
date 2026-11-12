@@ -10,7 +10,7 @@ There is no build step. The whole app is `index.html`; `firebase-config.js` hold
 
 The grocery list is shared through Firebase when `firebase-config.js` contains a Firebase web app config. Everyone signs in with Google, and the Firestore security rules decide which email addresses can read and change the list. Without a config, or while signed out, the list is saved on each device only.
 
-Once signed in, the list is also kept on the phone, so it opens and can be changed with no signal. Changes sync when the connection is back.
+Once signed in, the check marks on a meal's shopping list are shared too, and the list is also kept on the phone, so it opens and can be changed with no signal. Changes sync when the connection is back.
 
 ## One-time setup
 
@@ -23,11 +23,14 @@ Once signed in, the list is also kept on the phone, so it opens and can be chang
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /groceries/{item} {
-      allow read, write: if request.auth != null
+    function household() {
+      return request.auth != null
         && request.auth.token.email_verified == true
         && request.auth.token.email in ['you@gmail.com', 'housemate@gmail.com'];
     }
+    match /groceries/{item}   { allow read, write: if household(); }
+    match /history/{item}     { allow read, write: if household(); }
+    match /mealChecks/{doc}   { allow read, write: if household(); }
   }
 }
 ```
