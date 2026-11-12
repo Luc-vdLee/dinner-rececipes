@@ -98,6 +98,15 @@ test("a failed write is spoken, not silent", function () {
     assert.ok(/Nothing was added/.test(r.response.outputSpeech.text));
   });
 });
+test("a missing key file is spoken, not a crash", function () {
+  var store = fakeStore();
+  store.list = function () { throw new Error("Cannot find module './service-account.json'"); };
+  var log = console.error; console.error = function () {};
+  return skill.handle(intent("AddItemsIntent", { items: "milk" }), store).then(function (r) {
+    console.error = log;
+    assert.ok(/Nothing was added/.test(r.response.outputSpeech.text));
+  });
+});
 test("rejects requests from another skill when SKILL_ID is set", function () {
   process.env.SKILL_ID = "amzn1.ask.skill.mine";
   var ev = intent("AddItemsIntent", { items: "milk" });

@@ -72,6 +72,7 @@ Leave the skill in Development. Do not submit it for certification; it stays pri
 ## If something is off
 
 - **"Sorry, I couldn't reach the grocery list"**: Code tab → CloudWatch Logs shows the reason. `HTTP 403` means the service account lacks the Cloud Datastore User role; a missing-module error means `service-account.json` wasn't created or deployed.
+- **"There was a problem with the requested skill's response"**: the code itself failed to load, usually after pasting. Check that each file holds its own contents (`index.js` starts with a comment about the Alexa custom skill, `firestore.js` with one about the Firestore client), that nothing was cut off at the end, and that all files are inside `lambda/`. CloudWatch Logs names the file and line.
 - **Alexa adds to her own shopping list instead**: the skill name wasn't heard. Say "ask pantry helper to add…" or open the skill first. Use "ask", not "tell": Alexa can take "tell …" as sending a message.
 - **Alexa says she doesn't know that skill**: the skill's locale doesn't match the Echo's language, or the Echo is on a different Amazon account.
 - **Alexa+ speakers**: Amazon says existing-style skills stay available on original Alexa, and that being called by name on Alexa+ is something developers apply for. Whether a Development-stage skill answers on a speaker upgraded to Alexa+ is not confirmed; if yours doesn't, the Test tab and non-upgraded Echos still work.

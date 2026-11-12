@@ -71,8 +71,9 @@ function handle(event, store) {
 
   var intent = req.intent || {}, name = intent.name;
   var work;
-  if (name === "AddItemsIntent" || name === "BareItemIntent") work = addItems(slotValues(intent).join(" and "), open, store || db());
-  else if (name === "ReadListIntent") work = readList(open, store || db());
+  /* Started inside a promise so a missing or broken key file is spoken as an error, not a crash */
+  if (name === "AddItemsIntent" || name === "BareItemIntent") work = Promise.resolve().then(function () { return addItems(slotValues(intent).join(" and "), open, store || db()); });
+  else if (name === "ReadListIntent") work = Promise.resolve().then(function () { return readList(open, store || db()); });
   else if (name === "AMAZON.HelpIntent") work = Promise.resolve(speak("Say add, then what you need. For example: add milk, eggs and two pounds of potatoes. What should I add?", true, { open: true }));
   else if (name === "AMAZON.StopIntent" || name === "AMAZON.CancelIntent" || name === "AMAZON.NoIntent" || name === "AMAZON.NavigateHomeIntent") work = Promise.resolve(speak("Okay.", false));
   else work = Promise.resolve(speak("I didn't get that. Say add, then the item.", true, { open: true }));
