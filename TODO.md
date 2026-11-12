@@ -58,5 +58,5 @@ The check marks on a meal's shopping list sync between phones instead of staying
 
 ## Parked
 
-- Voice input (Alexa skill or a mic button on the page). Research notes are in the suggested task "Add voice input for the grocery list (Alexa or mic)".
+- A mic button on the Grocery list tab (browser speech recognition). The Alexa route is done: see `alexa-skill/`.
 - Collapse checked items into an "In the cart" group at the bottom of the grocery list.
