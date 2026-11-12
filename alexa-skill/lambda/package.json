@@ -1,0 +1,8 @@
+{
+  "name": "dinner-list-alexa-skill",
+  "version": "1.0.0",
+  "description": "Alexa skill that adds items to the shared grocery list in Firestore",
+  "main": "index.js",
+  "private": true,
+  "dependencies": {}
+}

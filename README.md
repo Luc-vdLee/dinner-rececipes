@@ -12,6 +12,10 @@ The grocery list is shared through Firebase when `firebase-config.js` contains a
 
 Once signed in, the list is also kept on the phone, so it opens and can be changed with no signal. Changes sync when the connection is back.
 
+## Adding by voice (Alexa)
+
+"Alexa, tell dinner list to add milk and eggs" puts items on the shared list through a private Alexa skill. The code and setup steps are in [`alexa-skill/`](alexa-skill/README.md).
+
 ## One-time setup
 
 1. **GitHub Pages**: repository Settings → Pages → Deploy from a branch → `main` / `(root)`.

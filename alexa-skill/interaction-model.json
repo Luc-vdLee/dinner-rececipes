@@ -1,0 +1,93 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "dinner list",
+      "intents": [
+        {
+          "name": "AddItemsIntent",
+          "slots": [{ "name": "items", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "add {items}",
+            "to add {items}",
+            "put {items}",
+            "to put {items}",
+            "buy {items}",
+            "to buy {items}",
+            "get {items}",
+            "we need {items}",
+            "that we need {items}",
+            "i need {items}",
+            "that i need {items}",
+            "we are out of {items}",
+            "that we are out of {items}",
+            "also add {items}",
+            "and add {items}"
+          ]
+        },
+        {
+          "name": "BareItemIntent",
+          "slots": [
+            { "name": "item", "type": "GroceryItem" },
+            { "name": "itemTwo", "type": "GroceryItem" }
+          ],
+          "samples": ["{item}", "{item} and {itemTwo}", "and {item}", "some {item}"]
+        },
+        {
+          "name": "ReadListIntent",
+          "slots": [],
+          "samples": [
+            "what's on the list",
+            "what is on the list",
+            "what's on it",
+            "read the list",
+            "to read the list",
+            "what we need",
+            "what do we need"
+          ]
+        },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": ["done", "that's it", "that's all", "nothing else", "i'm done"] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.NoIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] }
+      ],
+      "types": [
+        {
+          "name": "GroceryItem",
+          "values": [
+            { "name": { "value": "milk" } }, { "name": { "value": "eggs" } }, { "name": { "value": "butter" } },
+            { "name": { "value": "bread" } }, { "name": { "value": "cheese" } }, { "name": { "value": "shredded cheese" } },
+            { "name": { "value": "yogurt" } }, { "name": { "value": "sour cream" } }, { "name": { "value": "cream cheese" } },
+            { "name": { "value": "heavy cream" } }, { "name": { "value": "half and half" } }, { "name": { "value": "orange juice" } },
+            { "name": { "value": "chicken breast" } }, { "name": { "value": "chicken thighs" } }, { "name": { "value": "ground beef" } },
+            { "name": { "value": "bacon" } }, { "name": { "value": "sausage" } }, { "name": { "value": "salmon" } },
+            { "name": { "value": "onions" } }, { "name": { "value": "garlic" } }, { "name": { "value": "potatoes" } },
+            { "name": { "value": "sweet potatoes" } }, { "name": { "value": "tomatoes" } }, { "name": { "value": "lettuce" } },
+            { "name": { "value": "spinach" } }, { "name": { "value": "carrots" } }, { "name": { "value": "celery" } },
+            { "name": { "value": "bell peppers" } }, { "name": { "value": "broccoli" } }, { "name": { "value": "mushrooms" } },
+            { "name": { "value": "avocados" } }, { "name": { "value": "bananas" } }, { "name": { "value": "apples" } },
+            { "name": { "value": "lemons" } }, { "name": { "value": "limes" } }, { "name": { "value": "strawberries" } },
+            { "name": { "value": "blueberries" } }, { "name": { "value": "grapes" } }, { "name": { "value": "cilantro" } },
+            { "name": { "value": "parsley" } }, { "name": { "value": "rice" } }, { "name": { "value": "pasta" } },
+            { "name": { "value": "spaghetti" } }, { "name": { "value": "pasta sauce" } }, { "name": { "value": "chicken broth" } },
+            { "name": { "value": "black beans" } }, { "name": { "value": "canned tomatoes" } }, { "name": { "value": "olive oil" } },
+            { "name": { "value": "vegetable oil" } }, { "name": { "value": "flour" } }, { "name": { "value": "sugar" } },
+            { "name": { "value": "brown sugar" } }, { "name": { "value": "salt" } }, { "name": { "value": "black pepper" } },
+            { "name": { "value": "paprika" } }, { "name": { "value": "cumin" } }, { "name": { "value": "peanut butter" } },
+            { "name": { "value": "jelly" } }, { "name": { "value": "honey" } }, { "name": { "value": "ketchup" } },
+            { "name": { "value": "mustard" } }, { "name": { "value": "mayonnaise" } }, { "name": { "value": "salsa" } },
+            { "name": { "value": "tortillas" } }, { "name": { "value": "hamburger buns" } }, { "name": { "value": "bagels" } },
+            { "name": { "value": "cereal" } }, { "name": { "value": "oatmeal" } }, { "name": { "value": "coffee" } },
+            { "name": { "value": "tea" } }, { "name": { "value": "chips" } }, { "name": { "value": "crackers" } },
+            { "name": { "value": "cookies" } }, { "name": { "value": "ice cream" } }, { "name": { "value": "frozen pizza" } },
+            { "name": { "value": "frozen vegetables" } }, { "name": { "value": "paper towels" } }, { "name": { "value": "toilet paper" } },
+            { "name": { "value": "trash bags" } }, { "name": { "value": "dish soap" } }, { "name": { "value": "laundry detergent" } },
+            { "name": { "value": "aluminum foil" } }, { "name": { "value": "shampoo" } }, { "name": { "value": "toothpaste" } },
+            { "name": { "value": "mac and cheese" } }, { "name": { "value": "sparkling water" } }
+          ]
+        }
+      ]
+    }
+  }
+}

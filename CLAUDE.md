@@ -42,6 +42,14 @@ Meal checklists and cooking-step checks are per-device (`localStorage`) on purpo
 
 The Firebase store keeps an offline copy (`enablePersistence`). Its write promises settle only when the server confirms, so never chain shared-list writes one after another; use `writeAll`. Sign-in uses a pop-up only: the redirect flow can't work on GitHub Pages because the auth domain differs from the site's.
 
+## Alexa skill (`alexa-skill/`)
+
+A private custom skill ("Alexa, tell dinner list to add milk") that adds to the shared list. It is not part of the website: the code is pasted into the Alexa developer console by hand (see `alexa-skill/README.md`) and writes to Firestore with a service-account key, which bypasses the email allowlist. The key lives only in the skill backend; never commit it.
+
+- Documents it writes must keep the same shape as the site's (`{name, note, section, checked, createdAt}`).
+- `GUESS` in `alexa-skill/lambda/grocery.js` is a copy of `GUESS` in `index.html`. Change both together; `node alexa-skill/test.js` fails if they differ.
+- The skill has no npm dependencies on purpose (plain `https` + `crypto`).
+
 ## Design and conventions
 
 - Colors are CSS tokens on `:root` with dark-mode overrides; keep every color a token.
