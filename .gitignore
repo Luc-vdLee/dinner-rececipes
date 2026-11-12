@@ -1,0 +1,4 @@
+# Firebase service-account keys for the Alexa skill backend. Never commit these: the repo is public.
+service-account*.json
+*-firebase-adminsdk-*.json
+alexa-skill/lambda/node_modules/
