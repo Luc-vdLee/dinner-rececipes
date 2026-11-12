@@ -11,7 +11,7 @@ What you say:
 
 "Alexa, add milk to my shopping list" (without the skill name) always goes to Amazon's own list. Amazon closed that list to outside apps in July 2024, so the skill name is required.
 
-Items are split on "and" and commas, a leading amount becomes the note ("two pounds of potatoes" → Potatoes, note "2 pounds"), the store section is guessed the same way the website guesses it, and anything already on the list unchecked is skipped.
+Items are split on "and" and commas, a leading amount becomes the note ("two pounds of potatoes" → Potatoes, note "2 pounds"), the store section is guessed the same way the website guesses it, and anything already on the list unchecked is skipped. On the website these items show "Added by Alexa".
 
 ## Files
 

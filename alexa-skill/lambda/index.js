@@ -33,6 +33,8 @@ function addItems(spoken, open, store) {
     existing.forEach(function (i) { if (!i.checked) have[i.name.toLowerCase()] = true; });
     var fresh = items.filter(function (i) { return !have[i.name.toLowerCase()]; });
     var dupes = items.filter(function (i) { return have[i.name.toLowerCase()]; });
+    /* The website shows "Added by <name>" under each item */
+    fresh.forEach(function (i) { i.addedBy = "Alexa"; });
     return store.add(fresh).then(function () {
       var parts = [];
       if (fresh.length) parts.push("Added " + grocery.listWords(fresh.map(function (i) { return i.name; })) + ".");

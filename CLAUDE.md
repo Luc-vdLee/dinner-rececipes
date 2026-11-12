@@ -50,7 +50,7 @@ The Firebase store keeps an offline copy (`enablePersistence`). Its write promis
 
 A private custom skill ("Alexa, ask pantry helper to add milk") that adds to the shared list. It is not part of the website: the code is pasted into the Alexa developer console by hand (see `alexa-skill/README.md`) and writes to Firestore with a service-account key, which bypasses the email allowlist. The key lives only in the skill backend; never commit it.
 
-- Documents it writes must keep the same shape as the site's (`{name, note, section, checked, createdAt}`).
+- Documents it writes must keep the same shape as the site's. It sets `addedBy: "Alexa"`, which the site shows as "Added by Alexa".
 - `GUESS` in `alexa-skill/lambda/grocery.js` is a copy of `GUESS` in `index.html`. Change both together; `node alexa-skill/test.js` fails if they differ.
 - The skill has no npm dependencies on purpose (plain `https` + `crypto`).
 

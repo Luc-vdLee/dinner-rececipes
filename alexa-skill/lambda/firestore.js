@@ -116,17 +116,16 @@ function makeClient(opts) {
     var t = now();
     var root = base().replace("https://firestore.googleapis.com/v1/", "");
     var writes = items.map(function (it, i) {
+      var fields = {
+        name: { stringValue: it.name },
+        note: { stringValue: it.note || "" },
+        section: { stringValue: it.section || "other" },
+        checked: { booleanValue: false },
+        createdAt: { integerValue: String(t + i) }
+      };
+      if (it.addedBy) fields.addedBy = { stringValue: it.addedBy };
       return {
-        update: {
-          name: root + "/" + COLLECTION + "/" + newId(),
-          fields: {
-            name: { stringValue: it.name },
-            note: { stringValue: it.note || "" },
-            section: { stringValue: it.section || "other" },
-            checked: { booleanValue: false },
-            createdAt: { integerValue: String(t + i) }
-          }
-        },
+        update: { name: root + "/" + COLLECTION + "/" + newId(), fields: fields },
         currentDocument: { exists: false }
       };
     });

@@ -67,6 +67,7 @@ test("skips items already on the list, re-adds checked ones", function () {
   var store = fakeStore([{ name: "Eggs", checked: false }, { name: "Bread", checked: true }]);
   return skill.handle(intent("AddItemsIntent", { items: "milk and eggs and bread" }), store).then(function (r) {
     assert.deepStrictEqual(store.added.map(function (i) { return i.name; }), ["Milk", "Bread"]);
+    assert.deepStrictEqual(store.added.map(function (i) { return i.addedBy; }), ["Alexa", "Alexa"]);
     assert.strictEqual(r.response.outputSpeech.text, "Added Milk and Bread. Eggs is already on the list.");
   });
 });
@@ -127,7 +128,7 @@ test("firestore client: signed token request, list, and atomic add", function ()
     assert.strictEqual(claims.iss, key.client_email);
     assert.strictEqual(claims.scope, "https://www.googleapis.com/auth/datastore");
     assert.strictEqual(calls[1].headers.Authorization, "Bearer tok");
-    return c.add([{ name: "Milk", note: "1 gallon", section: "dairy" }, { name: "Eggs", note: "", section: "dairy" }]);
+    return c.add([{ name: "Milk", note: "1 gallon", section: "dairy" }, { name: "Eggs", note: "", section: "dairy", addedBy: "Alexa" }]);
   }).then(function () {
     assert.strictEqual(calls.length, 3, "token is reused");
     var commit = calls[2];
@@ -140,6 +141,7 @@ test("firestore client: signed token request, list, and atomic add", function ()
       checked: { booleanValue: false }, createdAt: { integerValue: "1700000000000" }
     });
     assert.strictEqual(writes[1].update.fields.createdAt.integerValue, "1700000000001");
+    assert.deepStrictEqual(writes[1].update.fields.addedBy, { stringValue: "Alexa" });
     assert.deepStrictEqual(writes[0].currentDocument, { exists: false });
   });
 });
