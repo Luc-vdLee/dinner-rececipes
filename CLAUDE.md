@@ -36,7 +36,11 @@ The page picks a store at runtime:
 2. `window.FIREBASE_CONFIG` set (this website): Firebase Firestore, collection `groceries`, with Google sign-in. Who can read and write is controlled by Firestore security rules in the Firebase console (an email allowlist), not by anything in this repo. Never put people's email addresses in this public repo.
 3. Otherwise: `localStorage` on that device only.
 
-Grocery documents: `{name, note, section, checked, createdAt}`.
+Grocery documents: `{name, note, section, checked, createdAt, addedBy?, checkedBy?}`. `addedBy` and `checkedBy` are first names from the Google sign-in, set only on the shared (Firebase) list.
+
+Adding an item that is already on the list unchecked (matched by `normName`) asks first: merge amounts, add anyway, or skip. Go through `findListed` and `askDup` for any new way of adding items.
+
+Planned work is in `TODO.md`.
 
 Meal checklists and cooking-step checks are per-device (`localStorage`) on purpose.
 
