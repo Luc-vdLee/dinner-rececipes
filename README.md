@@ -14,7 +14,7 @@ Once signed in, the list is also kept on the phone, so it opens and can be chang
 
 ## Adding by voice (Alexa)
 
-"Alexa, tell dinner list to add milk and eggs" puts items on the shared list through a private Alexa skill. The code and setup steps are in [`alexa-skill/`](alexa-skill/README.md).
+"Alexa, ask pantry helper to add milk and eggs" puts items on the shared list through a private Alexa skill. The code and setup steps are in [`alexa-skill/`](alexa-skill/README.md).
 
 ## One-time setup
 

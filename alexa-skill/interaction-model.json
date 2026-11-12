@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "dinner list",
+      "invocationName": "pantry helper",
       "intents": [
         {
           "name": "AddItemsIntent",

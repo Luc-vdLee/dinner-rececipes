@@ -4,10 +4,10 @@ A private Alexa custom skill that writes to the same Firestore `groceries` colle
 
 What you say:
 
-- "Alexa, tell dinner list to add milk and eggs"
-- "Alexa, tell dinner list we need two pounds of potatoes"
-- "Alexa, open dinner list" → "milk" → "paper towels and dish soap" → "done"
-- "Alexa, ask dinner list what's on the list"
+- "Alexa, ask pantry helper to add milk and eggs"
+- "Alexa, ask pantry helper to add two pounds of potatoes"
+- "Alexa, open pantry helper" → "milk" → "paper towels and dish soap" → "done"
+- "Alexa, ask pantry helper what's on the list"
 
 "Alexa, add milk to my shopping list" (without the skill name) always goes to Amazon's own list. Amazon closed that list to outside apps in July 2024, so the skill name is required.
 
@@ -40,14 +40,14 @@ The skill signs in to Firestore with a **service-account key**. That key skips t
 ### 2. Create the skill
 
 1. Sign in at the [Alexa developer console](https://developer.amazon.com/alexa/console/ask) with **the same Amazon account your Echo is registered to**. That is what lets an unpublished skill run on your speakers.
-2. Create Skill → name `Dinner List` → primary locale **English (US)** (it must match the language your Echo is set to; if yours is set to another English, pick that one).
+2. Create Skill → name `Pantry Helper` → primary locale **English (US)** (it must match the language your Echo is set to; if yours is set to another English, pick that one).
 3. Experience type Other → model **Custom** → hosting **Alexa-hosted (Node.js)** → template **Start from Scratch**.
 
 ### 3. Voice model
 
 Build tab → Interaction Model → JSON Editor → replace everything with the contents of `interaction-model.json` → Save → **Build skill**.
 
-To use a different name than "dinner list", change `invocationName` there. Two or more words, lower case.
+To use a different name than "pantry helper", change `invocationName` there. Two or more words, lower case. Avoid "list", "shopping", "message" and other words Alexa has her own features for: the first name tried, "dinner list", sent "open dinner list" to Alexa's lists and "tell dinner list…" to messaging, and never reached the skill.
 
 ### 4. Code and key
 
@@ -64,7 +64,7 @@ Alexa-hosted code is kept in a private repository that Amazon manages for your d
 ### 5. Try it
 
 1. Test tab → set "Skill testing is enabled in" to **Development**.
-2. Type or say `tell dinner list to add milk`. Alexa should answer "Added Milk." and Milk should appear on the website under Dairy & eggs.
+2. Type or say `open pantry helper`, then `add milk`. Alexa should answer "Added Milk. Anything else?" and Milk should appear on the website under Dairy & eggs.
 3. Say the same to your Echo.
 
 Leave the skill in Development. Do not submit it for certification; it stays private to your Amazon account and works on every Echo registered to that account, for anyone in the room.
@@ -72,7 +72,7 @@ Leave the skill in Development. Do not submit it for certification; it stays pri
 ## If something is off
 
 - **"Sorry, I couldn't reach the grocery list"**: Code tab → CloudWatch Logs shows the reason. `HTTP 403` means the service account lacks the Cloud Datastore User role; a missing-module error means `service-account.json` wasn't created or deployed.
-- **Alexa adds to her own shopping list instead**: the skill name wasn't heard. Say "tell dinner list to add…" or open the skill first.
+- **Alexa adds to her own shopping list instead**: the skill name wasn't heard. Say "ask pantry helper to add…" or open the skill first. Use "ask", not "tell": Alexa can take "tell …" as sending a message.
 - **Alexa says she doesn't know that skill**: the skill's locale doesn't match the Echo's language, or the Echo is on a different Amazon account.
 - **Alexa+ speakers**: Amazon says existing-style skills stay available on original Alexa, and that being called by name on Alexa+ is something developers apply for. Whether a Development-stage skill answers on a speaker upgraded to Alexa+ is not confirmed; if yours doesn't, the Test tab and non-upgraded Echos still work.
 

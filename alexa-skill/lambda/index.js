@@ -1,5 +1,5 @@
 "use strict";
-/* Alexa custom skill: "Alexa, tell dinner list to add milk and eggs".
+/* Alexa custom skill: "Alexa, ask pantry helper to add milk and eggs".
    Adds items to the same Firestore `groceries` collection the website uses.
    Handles the raw Alexa request JSON, so it needs no packages. */
 var grocery = require("./grocery");
